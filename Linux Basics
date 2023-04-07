@@ -1,0 +1,282 @@
+REPOSITORY
+==========
+#mkdir /chretien
+#cd /media/RHEL_6.0\ i386\ Disc\ 1/Packages/
+#cp * -v /chretien
+#rpm -ivh deltarpm Tab key
+#rpm -ivh python-delta Tab key
+#rpm -ivh create Tab Key
+#createrepo -v /chretien
+#vim /etc/yum.repos.d/tc.repo
+*inside the file append:
+[server]
+name= Linux Server
+baseurl=file:///chretien
+enabled=1
+gpgcheck=0 
+esc :wq
+#yum repolist
+if there are 0 remove packagekit
+#cd /etc/yum.repos.d/
+#ls
+#rm -f pack tab key
+
+DHCP CONFIGURATION
+==================
+First configure network
+#system-config-network-tui 
+or
+#Setup and follow the steps
+#yum install -y dhcp
+#rpm -qa dhcp
+#vim /etc/dhcp/dhcpd.conf
+     put this configuration inside
+allow booting;
+allow bootp;
+authoritative;
+
+option domain-name "linux.com";
+
+default-lease-time 1200;
+max-lease-time 2400;
+
+subnet 192.168.10.0 netmask 255.255.255.0{
+range 192.168.10.5 192.168.10.10;
+option routers 192.168.10.1;
+next-server 192.168.10.2;
+}
+#service dhcpd restart
+#in case there is error troubleshoot using: dhcpd -t
+
+SUB-INTERFACE
+============= set
+
+TO ADD SUB INTERFACE
+--------------------
+#cd /etc/sysconfig/network-scripts/
+#cp ifcfg-eth0  ifcfg-eth0:1
+#vim ifcfg-eth0:1
+
+//in ifcfg-eth0:1 configuration
+
+DEVICE=eth0:1
+ONPARENT=yes
+IPADDR=172.16.10.1
+NETMASK=255.255.0.0
+
+after editing
+-------------
+#ln ifcfg-eth0:1 ../networking/devices/
+#ln ifcfg-eth0:1 ../networking/profiles/default/
+#/etc/init.d/network restart
+#reboot
+
+IPV6 CONFIGURATION
+==================
+
+#vim /etc/sysconfig/network
+
+APPEND: NETWORKING_IPV6=yes
+
+in eth0 do the following
+------------------------
+#cd /etc/sysconfig/network-scripts/
+#vim ifcfg-eth0
+APPEND THE FOLLOWING:
+IPV6INIT=yes
+IPV6_AUTOCONF=no
+MTU=1500
+IPV6ADDR=2002::10/64
+IPV6_DEFAULTGW=2002::1
+
+after the configuration
+-----------------------
+#/etc/init.d/network restart
+#reboot
+to see all hosts
+----------------
+#cat /etc/hosts
+
+DHCPD6 CONFIGURATION
+====================
+
+#vim /etc/dhcp/dhcpd6.conf
+Append the following:
+
+subnet6 2002::/64{
+range6 2002::20 2002::50;
+option dhcp.domain-search
+"chretien.com";
+}
+ esc :wq
+#yum install radvd -y
+#rpmquery radvd
+
+#vim /etc/radvd.conf
+
+have to look like this:
+interface eth0
+{
+        AdvSendAdvert on;
+        MinRtrAdvInterval 30;
+        MaxRtrAdvInterval 100;
+        prefix 2002::/64
+        {
+                AdvOnLink on;
+                AdvAutonomous on;
+                AdvRouterAddr off;
+        };
+
+};
+
+#sysctl net.ipv6.conf.all.forwarding=1
+#service radvd restart
+#service dhcpd6 restart
+
+
+USER AND GROUP PERMISSION MANAGEMENT
+====================================
+Creating user and group
+-----------------------
+#useradd (name)
+#groupadd (name)
+
+check how many user in the system
+---------------------------------
+#cat /etc/passwd to see privileges too  or
+#system-config-users 
+
+check how many groups in the system
+-----------------------------------
+#cat /etc/group
+
+modify user account
+-------------------
+#usermod (name)
+in case you don't know the use of usermod just type: man usermod
+
+to change group of a user
+-------------------------
+#usermod -a -G group1 user1
+
+to explore directories found in /
+--------------------------------
+#cd /
+ls:list simply
+ls -l: list with permission show
+ 
+changing ownership of a group
+-----------------------------
+#chown username /staffdata
+#chown :group1 /staffdata
+
+or type the following
+---------------------
+#chown username:group1 /staffdata
+
+GIVING AND MODIFYING PERMISSION
+-------------------------------
+d-: it is a directory
+-: it is a file
+rwx: full rights whic means read write execute
+read(r):4
+write(w):2
+execute(x):1
+if you have full right u got seven and the order follow like this
+directory/file   owner  group other
+
+use following command to change permission
+chmod 770 /staffdata
+
+how to make user change his passwd at logon
+-------------------------------------------
+#chage -d 0 user2
+
+how to check all infos abt the user
+-----------------------------------
+#chage -l user2
+
+set passord for user
+--------------------
+#passwd user2
+
+how to set expiry date of the passwd
+------------------------------------
+#chage -E 30/10/2022 user2
+
+set password inactive
+--------------------
+#chage -I 2 user2
+
+minimum days bfr passwd change
+------------------------------
+#chage -m 2 user2
+
+maximum days bfr passwd change
+------------------------------
+#chage -M 2 user2
+
+warn days bfr passwd change
+---------------------------
+#chage -W 2 user2 
+
+#cat /etc/group
+
+SCP USING SSH KEYS
+==================
+#ssh root@ipaddressofclient
+
+#ssh-keygen -t rsa -b 4096
+then press 3 enter key
+
+to avoid using password
+#ssh-copy-id root@ipaddressofclientcop
+
+SCP WITH PASSWORD
+=================
+Creating file
+-------------
+#touch file.txt
+
+copying file to client
+----------------------
+#scp sh.txt Dass@192.168.10.3:sh.txt
+
+copying file from client
+------------------------
+#scp Dass@192.168.10.2 kol.txt:kol.txt
+
+allowing copy/paste btn hostmachine and virtualization
+------------------------------------------------------
+first go on virtualbox->settings->storage->then add VboxGuestAddition.iso
+open your server as the user then type following command
+
+#df -kh
+#cd /media /VB tab key 
+#ls to check if VBoxLinuxAdditions.run is there
+#su to change to root
+#pwd to check which directory you in
+#sh VBoxLinuxAdditions.run
+
+**if it does not display "starting virtualbox" as last line proceed to these code
+first change directory:cd /media/RHEL_6.0\ i386\ Disc\ 1/Packages/
+#rpm -ivh ppl-0.10.2-11.el6.i686.rpm
+#rpm -ivh cloog-ppl-0.15.7-1.2.el6.i686.rpm
+#rpm -ivh mpfr-2.4.1-6.el6.i686.rpm
+#rpm -ivh cpp-4.4.4-13.el6.i686.rpm 
+#rpm -ivh gcc-4.4.4-13.el6.i686.rpm 
+#rpm -ivh kernel-devel-2.6.32-71.el6.i686.rpm 
+#rpm -ivh kernel-headers-2.6.32-71.el6.i686.rpm
+
+after all this change directory to:
+#cd /media /VB tab key
+then run:
+#sh VBoxLinuxAdditions.run
+
+it shld be okay by now.........
+
+then shutdown ur machine go back to settings->general->advanced
+
+then change share "clipboard" and "drag and drop" to bidirectional
+
+***restart the machine the magic should be done....
